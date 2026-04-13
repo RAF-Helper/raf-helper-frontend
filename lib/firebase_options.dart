@@ -19,29 +19,35 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // Firebase Console → Project Settings → Web app
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+    apiKey: 'AIzaSyA97Ydg7xkvlCSJbwTwXPRDG_PFRODOi1o',
+    appId: '1:194490968007:web:f22205896f2306275bdbe2',
+    messagingSenderId: '194490968007',
+    projectId: 'rafhelper',
+    authDomain: 'rafhelper.firebaseapp.com',
+    storageBucket: 'rafhelper.firebasestorage.app',
+  );
+
+  // Firebase Console → Project Settings → Web app
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'AIzaSyCm0-oQqAsPedy1K1f4YhsxaDN_aa67CNU',
+    appId: '1:194490968007:android:0c8220c4d072b4cf5bdbe2',
+    messagingSenderId: '194490968007',
+    projectId: 'rafhelper',
+    storageBucket: 'rafhelper.firebasestorage.app',
   );
 
   // Firebase Console → Project Settings → Android app
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyCHfEXtHAjBh9lqkbs3aMfh5PuJG1UNzuI',
+    appId: '1:194490968007:ios:e6fb74e1293ae0105bdbe2',
+    messagingSenderId: '194490968007',
+    projectId: 'rafhelper',
+    storageBucket: 'rafhelper.firebasestorage.app',
+    iosBundleId: 'com.example.RafHelper',
   );
 
   // Firebase Console → Project Settings → iOS app
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    iosBundleId: 'com.example.rafHelper',
-  );
 }

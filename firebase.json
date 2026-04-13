@@ -1,0 +1,23 @@
+{
+    "flutter": {
+        "platforms": {
+            "android": {
+                "default": {
+                    "projectId": "rafhelper",
+                    "appId": "1:194490968007:android:0c8220c4d072b4cf5bdbe2",
+                    "fileOutput": "android/app/google-services.json"
+                }
+            },
+            "dart": {
+                "lib/firebase_options.dart": {
+                    "projectId": "rafhelper",
+                    "configurations": {
+                        "android": "1:194490968007:android:0c8220c4d072b4cf5bdbe2",
+                        "ios": "1:194490968007:ios:e6fb74e1293ae0105bdbe2",
+                        "web": "1:194490968007:web:f22205896f2306275bdbe2"
+                    }
+                }
+            }
+        }
+    }
+}
