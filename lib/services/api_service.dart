@@ -8,7 +8,7 @@ class ApiService {
 
   static const _defaultBase = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:8000', // Android emulator → host loopback
+    defaultValue: 'https://rafhelper.xyz', // Android emulator → host loopback
   );
 
   ApiService({String baseUrl = _defaultBase}) : _dio = Dio() {
