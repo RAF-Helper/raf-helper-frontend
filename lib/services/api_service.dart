@@ -3,7 +3,12 @@ import 'package:dio/dio.dart';
 class ApiService {
   final Dio _dio;
 
-  ApiService({String baseUrl = 'http://localhost:8000'}) : _dio = Dio() {
+  static const _defaultBase = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://10.0.2.2:8000', // Android emulator → host loopback
+  );
+
+  ApiService({String baseUrl = _defaultBase}) : _dio = Dio() {
     _dio.options.baseUrl = baseUrl;
     _dio.options.connectTimeout = const Duration(seconds: 30);
     _dio.options.receiveTimeout = const Duration(seconds: 60);
