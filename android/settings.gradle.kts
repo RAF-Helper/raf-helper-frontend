@@ -31,3 +31,6 @@ include(":app")
 
 include(":unityLibrary")
 project(":unityLibrary").projectDir = file("./unityLibrary")
+
+include(":unityLibrary:xrmanifest.androidlib")
+project(":unityLibrary:xrmanifest.androidlib").projectDir = file("./unityLibrary/xrmanifest.androidlib")
