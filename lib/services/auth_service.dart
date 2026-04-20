@@ -87,7 +87,7 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> _syncWithBackend(User user) async {
-    final idToken = await user.getIdToken();
+    final idToken = await user.getIdToken(true); // force-refresh so token has latest email_verified claim
     if (idToken == null) throw Exception('Не удалось получить токен');
 
     api.setAuthToken(idToken);
