@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 class ApiService {
@@ -89,9 +90,26 @@ class ApiService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> uploadFileBytes(
+      Uint8List bytes, String fileName, String mimeType) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
+        contentType: DioMediaType.parse(mimeType),
+      ),
+    });
+    final response = await _dio.post('/files/', data: formData);
+    return response.data;
+  }
+
   Future<List<dynamic>> getFiles() async {
     final response = await _dio.get('/files/');
     return response.data;
+  }
+
+  Future<void> deleteFile(int fileId) async {
+    await _dio.delete('/files/$fileId');
   }
 
   // ---- Context files ----
