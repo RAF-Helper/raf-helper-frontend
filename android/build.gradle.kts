@@ -27,3 +27,13 @@ subprojects {
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
+
+subprojects {
+    plugins.withType<com.android.build.gradle.api.AndroidBasePlugin> {
+        configure<com.android.build.gradle.BaseExtension> {
+            if (project.name != "jni") {
+                ndkVersion = "27.2.12479018"
+            }
+        }
+    }
+}
