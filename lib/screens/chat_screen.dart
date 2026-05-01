@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/quick_action_card.dart';
+import 'navigation_screen.dart';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -228,6 +229,14 @@ class _ChatScreenState extends State<ChatScreen> {
       case 'presentation':
         _sendMessage('Сделай презентацию по теме', agent: 'presentation');
         break;
+        case 'ar':
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NavigationScreen(),
+            ),
+          );
+          break;
     }
   }
 
@@ -529,7 +538,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 onTap: () => _handleQuickAction('staff'),
               ),
-              QuickActionCard(
+/*               QuickActionCard(
                 title: 'Конспект',
                 subtitle: 'Краткое, обычное или глубокое резюме',
                 icon: Icons.summarize,
@@ -537,7 +546,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
                 ),
                 onTap: () => _handleQuickAction('summarizer'),
-              ),
+              ), */
               QuickActionCard(
                 title: 'Реферат',
                 subtitle: 'Составление реферата по материалам',
@@ -555,6 +564,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   colors: [Color(0xFF00BCD4), Color(0xFF0097A7)],
                 ),
                 onTap: () => _handleQuickAction('presentation'),
+              ),
+              QuickActionCard(
+                title: 'Навигация',
+                subtitle: 'Построить маршрут до аудитории',
+                icon: Icons.map_outlined, 
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD600), Color(0xFFFFA000)], // Сочный жёлто-янтарный
+                ),
+                onTap: () => _handleQuickAction('ar'),
               ),
             ],
           ),
