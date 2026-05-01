@@ -511,12 +511,21 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisSpacing: 12,
             childAspectRatio: 1.2,
             children: [
+            QuickActionCard(
+              title: 'Навигация',
+              subtitle: 'Построить маршрут до аудитории',
+              icon: Icons.near_me,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0A84FF), Color(0xFF5E5CE6)],
+              ),
+            onTap: () => _handleQuickAction('ar'),
+          ),
               QuickActionCard(
                 title: 'Вопросы\nпо материалам',
-                subtitle: 'Ответы на основе загруженных лекций и книг',
+                subtitle: 'Ответы на основе загруженных лекций',
                 icon: Icons.menu_book,
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF0A84FF), Color(0xFF5E5CE6)],
+                  colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
                 ),
                 onTap: () => _handleQuickAction('qa'),
               ),
@@ -538,24 +547,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
                 onTap: () => _handleQuickAction('staff'),
               ),
-/*               QuickActionCard(
-                title: 'Конспект',
-                subtitle: 'Краткое, обычное или глубокое резюме',
-                icon: Icons.summarize,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
-                ),
-                onTap: () => _handleQuickAction('summarizer'),
-              ), */
-              QuickActionCard(
-                title: 'Реферат',
-                subtitle: 'Составление реферата по материалам',
-                icon: Icons.article,
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
-                ),
-                onTap: () => _handleQuickAction('abstract'),
-              ),
               QuickActionCard(
                 title: 'Презентация',
                 subtitle: 'Генерация слайдов по теме',
@@ -566,13 +557,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 onTap: () => _handleQuickAction('presentation'),
               ),
               QuickActionCard(
-                title: 'Навигация',
-                subtitle: 'Построить маршрут до аудитории',
-                icon: Icons.map_outlined, 
+                title: 'Реферат',
+                subtitle: 'Составление реферата по материалам',
+                icon: Icons.article,
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFFFD600), Color(0xFFFFA000)], // Сочный жёлто-янтарный
+                  colors: [Color(0xFFF9D423), Color(0xFFFFD600)],
                 ),
-                onTap: () => _handleQuickAction('ar'),
+                onTap: () => _handleQuickAction('abstract'),
               ),
             ],
           ),
