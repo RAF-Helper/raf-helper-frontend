@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_unity_widget/flutter_unity_widget.dart';
 
 class NavigationScreen extends StatefulWidget {
-  const NavigationScreen({super.key});
+  final String? roomNumber;
+
+  const NavigationScreen({super.key, this.roomNumber});
 
   @override
   State<NavigationScreen> createState() => _NavigationScreenState();
@@ -26,8 +28,11 @@ class _NavigationScreenState extends State<NavigationScreen> {
             color: Colors.black,
             child: UnityWidget(
               onUnityCreated: onUnityCreated,
-              onUnityMessage: onUnityMessage,
-              onUnitySceneLoaded: onUnitySceneLoaded,
+              onUnitySceneLoaded: (scene) {
+                if (widget.roomNumber != null) {
+                  sendRouteToUnity(widget.roomNumber!);
+                }
+              },
               useAndroidViewSurface: true,
             ),
           ),
@@ -55,13 +60,13 @@ class _NavigationScreenState extends State<NavigationScreen> {
     _unityWidgetController = controller;
   }
 
-  // Здесь ты можешь принимать сообщения из Unity (например, результаты лабы)
-  void onUnityMessage(message) {
-    print('Сообщение от Unity: ${message.toString()}');
-  }
-
-  // Вызывается, когда сцена внутри Unity полностью загружена
-  void onUnitySceneLoaded(SceneLoaded? scene) {
-    print('Сцена загружена: ${scene?.name}');
+  void sendRouteToUnity(String roomNumber) {
+    if (_unityWidgetController != null) {
+      _unityWidgetController!.postMessage(
+        'FlutterBridge',      // Имя объекта в Unity
+        'SetRouteFromFlutter', // Имя метода в C# скрипте
+        roomNumber,           // Значение (номер аудитории)
+      );
+    }
   }
 }
