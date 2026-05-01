@@ -20,15 +20,32 @@ class _NavigationScreenState extends State<NavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        color: Colors.black, 
-        child: UnityWidget(
-          onUnityCreated: onUnityCreated,
-          onUnityMessage: onUnityMessage,
-          onUnitySceneLoaded: onUnitySceneLoaded,
-          // fullscreen: true, // В некоторых версиях плагина можно включить этот флаг
-          useAndroidViewSurface: true, // Рекомендуется для стабильности на Android
-        ),
+      body: Stack(
+        children: [
+          Container(
+            color: Colors.black,
+            child: UnityWidget(
+              onUnityCreated: onUnityCreated,
+              onUnityMessage: onUnityMessage,
+              onUnitySceneLoaded: onUnitySceneLoaded,
+              useAndroidViewSurface: true,
+            ),
+          ),
+          Positioned(
+            top: 20,
+            left: 16,
+            child: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Colors.white,
+                shadows: [Shadow(blurRadius: 15, color: Colors.black)], 
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
