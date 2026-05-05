@@ -100,6 +100,10 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> resetPassword(String email) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
   Future<void> logout() async {
     await _firebaseAuth.signOut();
     _isAuthenticated = false;
