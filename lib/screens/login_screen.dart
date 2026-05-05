@@ -79,6 +79,58 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController(text: _emailController.text);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2E),
+        title: const Text('Восстановление пароля'),
+        content: TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          decoration: InputDecoration(
+            labelText: 'Email (@bsu.by)',
+            prefixIcon: const Icon(Icons.email_outlined),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: const Color(0xFF3C3C3E),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final email = emailController.text.trim();
+              Navigator.pop(ctx);
+              if (!email.endsWith('@bsu.by')) {
+                setState(() => _errorMessage = 'Только email @bsu.by разрешены');
+                return;
+              }
+              try {
+                await context.read<AuthService>().resetPassword(email);
+                setState(() {
+                  _errorMessage = null;
+                  _infoMessage = 'Письмо для сброса пароля отправлено на $email';
+                });
+              } catch (e) {
+                setState(() => _errorMessage = _formatError(e.toString()));
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0A84FF),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Отправить'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _resendEmail() async {
     try {
       await context.read<AuthService>().resendVerificationEmail();
@@ -163,11 +215,32 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           onSubmitted: (_) => _handleSubmit(),
         ),
+        if (!isRegister) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: _showForgotPasswordDialog,
+              child: const Text(
+                'Забыли пароль?',
+                style: TextStyle(color: Color(0xFF0A84FF), fontSize: 13),
+              ),
+            ),
+          ),
+        ],
         if (_errorMessage != null) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Text(
             _errorMessage!,
             style: const TextStyle(color: Colors.redAccent),
+            textAlign: TextAlign.center,
+          ),
+        ],
+        if (_infoMessage != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _infoMessage!,
+            style: const TextStyle(color: Colors.greenAccent),
             textAlign: TextAlign.center,
           ),
         ],
