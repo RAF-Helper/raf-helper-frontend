@@ -152,10 +152,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     setState(() {
-      _messages.add({
-        'role': 'user',
-        'content': text,
-      });
+      _messages.add({'role': 'user', 'content': text});
       _isSending = true;
     });
     _messageController.clear();
@@ -259,51 +256,66 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1C1C1E),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => setState(() => _showChatList = !_showChatList),
-        ),
-        title: Row(
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
+    return PopScope(
+      canPop: !_showChatList && _currentChatId == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_showChatList) {
+          setState(() => _showChatList = false);
+        } else if (_currentChatId != null) {
+          setState(() {
+            _currentChatId = null;
+            _messages = [];
+            _contextFiles = [];
+          });
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1C1C1E),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => setState(() => _showChatList = !_showChatList),
+          ),
+          title: Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'RAF Helper',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              const SizedBox(width: 8),
+              const Text(
+                'RAF Helper',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.add_comment_outlined),
+              tooltip: 'Новый чат',
+              onPressed: () => _createChat(),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_comment_outlined),
-            tooltip: 'Новый чат',
-            onPressed: () => _createChat(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Выйти',
-            onPressed: () {
-              context.read<AuthService>().logout();
-            },
-          ),
-        ],
-      ),
-      body: Row(
-        children: [
-          if (_showChatList) _buildChatList(),
-          Expanded(child: _buildChatArea()),
-        ],
+        body: Stack(
+          children: [
+            _buildChatArea(),
+            if (_showChatList) ...[
+              GestureDetector(
+                onTap: () => setState(() => _showChatList = false),
+                behavior: HitTestBehavior.opaque,
+                child: Container(color: Colors.black38),
+              ),
+              _buildChatList(),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -338,10 +350,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: _chats.isEmpty
                 ? const Center(
-                    child: Text(
-                      'Нет чатов',
-                      style: TextStyle(color: Colors.grey),
-                    ),
+                    child: Text('Нет чатов', style: TextStyle(color: Colors.grey)),
                   )
                 : ListView.builder(
                     itemCount: _chats.length,
@@ -351,7 +360,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       final isSelected = chatId == _currentChatId;
                       return ListTile(
                         selected: isSelected,
-                        selectedTileColor: const Color(0xFF0A84FF).withValues(alpha: 0.15),
+                        selectedTileColor:
+                            const Color(0xFF0A84FF).withValues(alpha: 0.15),
                         title: Text(
                           chat['title'] ?? 'Чат #$chatId',
                           maxLines: 1,
@@ -366,6 +376,15 @@ class _ChatScreenState extends State<ChatScreen> {
                       );
                     },
                   ),
+          ),
+          const Divider(height: 1, color: Color(0xFF3C3C3E)),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.redAccent, size: 20),
+            title: const Text(
+              'Выйти из аккаунта',
+              style: TextStyle(color: Colors.redAccent, fontSize: 14),
+            ),
+            onTap: () => context.read<AuthService>().logout(),
           ),
         ],
       ),
@@ -677,7 +696,8 @@ class _FilesSheetState extends State<_FilesSheet> {
     setState(() => _isUploading = true);
     try {
       final mime = _mimeFromExtension(picked.extension);
-      final resp = await widget.api.uploadFileBytes(picked.bytes!, picked.name, mime);
+      final resp =
+          await widget.api.uploadFileBytes(picked.bytes!, picked.name, mime);
       final newFile = Map<String, dynamic>.from(resp['file'] as Map);
       if (mounted) {
         setState(() {
@@ -712,7 +732,9 @@ class _FilesSheetState extends State<_FilesSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Ошибка: $e'), backgroundColor: Colors.red.shade700),
+          SnackBar(
+              content: Text('Ошибка: $e'),
+              backgroundColor: Colors.red.shade700),
         );
       }
     }
@@ -728,7 +750,6 @@ class _FilesSheetState extends State<_FilesSheet> {
       ),
       child: Column(
         children: [
-          // drag handle
           Container(
             margin: const EdgeInsets.symmetric(vertical: 8),
             width: 40,
@@ -738,7 +759,6 @@ class _FilesSheetState extends State<_FilesSheet> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          // header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
@@ -763,7 +783,6 @@ class _FilesSheetState extends State<_FilesSheet> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFF3C3C3E)),
-          // list
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -772,7 +791,8 @@ class _FilesSheetState extends State<_FilesSheet> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.folder_open, size: 48, color: Colors.grey),
+                            Icon(Icons.folder_open,
+                                size: 48, color: Colors.grey),
                             SizedBox(height: 8),
                             Text(
                               'Нет загруженных файлов',
@@ -781,7 +801,8 @@ class _FilesSheetState extends State<_FilesSheet> {
                             SizedBox(height: 4),
                             Text(
                               'PDF, DOCX, PPTX — до 50 МБ',
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
                             ),
                           ],
                         ),
@@ -792,14 +813,17 @@ class _FilesSheetState extends State<_FilesSheet> {
                           final file = _files[i];
                           final fileId = file['id'] as int;
                           final inContext = _contextIds.contains(fileId);
-                          final name = file['original_name'] as String? ?? 'Файл';
+                          final name =
+                              file['original_name'] as String? ?? 'Файл';
                           final size = file['size'] as int? ?? 0;
-                          final isIndexed = file['is_indexed'] as bool? ?? false;
+                          final isIndexed =
+                              file['is_indexed'] as bool? ?? false;
                           final mime = file['mime_type'] as String? ?? '';
 
                           return CheckboxListTile(
                             value: inContext,
-                            secondary: Icon(_iconFromMime(mime), color: Colors.grey),
+                            secondary: Icon(_iconFromMime(mime),
+                                color: Colors.grey),
                             title: Text(
                               name,
                               maxLines: 1,
