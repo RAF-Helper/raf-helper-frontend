@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.multiset.sdk": "https://github.com/MultiSet-AI/multiset-unity-sdk.git",
+    "com.multiset.sdk": "file:../Assets/Plugins/com.multiset.sdk",
     "com.unity.ai.navigation": "2.0.11",
     "com.unity.collab-proxy": "2.11.4",
     "com.unity.ide.rider": "3.0.39",

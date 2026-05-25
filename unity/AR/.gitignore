@@ -10,3 +10,5 @@ obj/
 .vsconfig
 *.apk
 *.unitypackage
+unity/AR/Assets/Plugins/
+unity/AR/Assets/Plugins.meta

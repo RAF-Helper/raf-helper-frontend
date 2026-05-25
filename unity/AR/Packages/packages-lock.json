@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "com.multiset.sdk": {
-      "version": "https://github.com/MultiSet-AI/multiset-unity-sdk.git",
+      "version": "file:../Assets/Plugins/com.multiset.sdk",
       "depth": 0,
-      "source": "git",
+      "source": "local",
       "dependencies": {
         "com.unity.cloud.draco": "5.4.2",
         "com.unity.cloud.gltfast": "6.15.1",
@@ -11,8 +11,7 @@
         "com.unity.xr.arfoundation": "6.3.3",
         "com.unity.xr.arkit": "6.3.3",
         "com.unity.ai.navigation": "2.0.11"
-      },
-      "hash": "0f29d0704bb2036b084e1e64c9526eec85e8b114"
+      }
     },
     "com.unity.ai.navigation": {
       "version": "2.0.11",

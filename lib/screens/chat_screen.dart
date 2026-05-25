@@ -229,14 +229,22 @@ class _ChatScreenState extends State<ChatScreen> {
       case 'presentation':
         _sendMessage('Сделай презентацию по теме', agent: 'presentation');
         break;
-        case 'ar':
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => NavigationScreen(),
-            ),
-          );
-          break;
+      case 'ar':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NavigationScreen(),
+          ),
+        );
+        break;
+      case 'test':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NavigationScreen(roomNumber: "619"),
+          ),
+        );
+        break;
     }
   }
 
@@ -564,6 +572,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   colors: [Color(0xFFF9D423), Color(0xFFFFD600)],
                 ),
                 onTap: () => _handleQuickAction('abstract'),
+              ),
+              QuickActionCard(
+                title: 'Тест',
+                subtitle: 'Активное тестирование',
+                icon: Icons.article,
+                gradient: const LinearGradient(
+                  colors: [Color.fromARGB(255, 74, 35, 249), Color.fromARGB(255, 12, 26, 117)],
+                ),
+                onTap: () => _handleQuickAction('test'),
               ),
             ],
           ),

@@ -55,7 +55,6 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  // Вызывается, когда виджет Unity создан
   void onUnityCreated(controller) {
     _unityWidgetController = controller;
   }
