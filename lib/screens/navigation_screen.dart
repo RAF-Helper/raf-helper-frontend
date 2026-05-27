@@ -28,11 +28,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
             color: Colors.black,
             child: UnityWidget(
               onUnityCreated: onUnityCreated,
-              onUnitySceneLoaded: (scene) {
-                if (widget.roomNumber != null) {
-                  sendRouteToUnity(widget.roomNumber!);
-                }
-              },
+              onUnitySceneLoaded: onUnitySceneLoaded, // Вынесли в отдельный метод
               useAndroidViewSurface: true,
             ),
           ),
@@ -45,9 +41,7 @@ class _NavigationScreenState extends State<NavigationScreen> {
                 color: Colors.white,
                 shadows: [Shadow(blurRadius: 15, color: Colors.black)], 
               ),
-              onPressed: () {
-                Navigator.pop(context);
-              },
+              onPressed: () => Navigator.pop(context),
             ),
           ),
         ],
@@ -55,17 +49,41 @@ class _NavigationScreenState extends State<NavigationScreen> {
     );
   }
 
-  void onUnityCreated(controller) {
-    _unityWidgetController = controller;
+  void onUnityCreated(UnityWidgetController controller) {
+    setState(() {
+      _unityWidgetController = controller;
+    });
+    print("FLUTTER: Контроллер Unity успешно создан.");
+    
+    // Безопасный дублирующий вызов: если сцена уже была в памяти, 
+    // отправляем аудиторию сразу при создании контроллера
+    if (widget.roomNumber != null) {
+      print("FLUTTER: Обнаружена аудитория при старте: ${widget.roomNumber}");
+      sendRouteToUnity(widget.roomNumber!);
+    }
+  }
+
+  void onUnitySceneLoaded(SceneLoaded? scene) async {
+    print("FLUTTER: Сцена Unity загрузилась. Имя: ${scene?.name}");
+    
+    // Небольшая искусственная задержка (микротаск), чтобы дать мосту связи "прогреться"
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (widget.roomNumber != null) {
+      sendRouteToUnity(widget.roomNumber!);
+    }
   }
 
   void sendRouteToUnity(String roomNumber) {
     if (_unityWidgetController != null) {
+      print("FLUTTER: Отправляю postMessage в Unity. Объект: FlutterBridge, Метод: SetRouteFromFlutter, Значение: $roomNumber");
       _unityWidgetController!.postMessage(
-        'FlutterBridge',      // Имя объекта в Unity
-        'SetRouteFromFlutter', // Имя метода в C# скрипте
-        roomNumber,           // Значение (номер аудитории)
+        'FlutterBridge',      // Убедись, что этот GameObject ЕСТЬ на сцене в Unity!
+        'SetRouteFromFlutter', // Убедись, что этот метод есть в C# скрипте на этом объекте!
+        roomNumber,           
       );
+    } else {
+      print("FLUTTER: Ошибка! Попытка отправить данные, но _unityWidgetController еще NULL.");
     }
   }
 }
