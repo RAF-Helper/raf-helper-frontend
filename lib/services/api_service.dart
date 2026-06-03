@@ -11,8 +11,8 @@ class ApiService {
 
   ApiService({String baseUrl = _defaultBase}) : _dio = Dio() {
     _dio.options.baseUrl = baseUrl;
-    _dio.options.connectTimeout = const Duration(seconds: 30);
-    _dio.options.receiveTimeout = const Duration(seconds: 60);
+    _dio.options.connectTimeout = const Duration(seconds: 60);
+    _dio.options.receiveTimeout = const Duration(seconds: 600);
     _dio.options.headers['Content-Type'] = 'application/json';
   }
 

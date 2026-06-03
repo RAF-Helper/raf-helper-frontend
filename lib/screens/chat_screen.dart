@@ -27,13 +27,6 @@ String _formatSize(int bytes) {
   return '${(bytes / 1024 / 1024).toStringAsFixed(1)} МБ';
 }
 
-IconData _iconFromMime(String mime) {
-  if (mime.contains('pdf')) return Icons.picture_as_pdf;
-  if (mime.contains('word') || mime.contains('document')) return Icons.description;
-  if (mime.contains('presentation')) return Icons.slideshow;
-  return Icons.insert_drive_file;
-}
-
 // ── ChatScreen ──────────────────────────────────────────────────────────────
 
 class ChatScreen extends StatefulWidget {
@@ -46,6 +39,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _messageController = TextEditingController();
   final _scrollController = ScrollController();
+  final _inputFocusNode = FocusNode();
 
   List<Map<String, dynamic>> _chats = [];
   List<Map<String, dynamic>> _messages = [];
@@ -58,6 +52,9 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    // Перестраиваем только при появлении/исчезновении фокуса (дискретно),
+    // а не на каждом кадре анимации клавиатуры.
+    _inputFocusNode.addListener(() => setState(() {}));
     _loadChats();
   }
 
@@ -225,10 +222,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _showFilesPanel() {
+  Future<void> _showFilesPanel() async {
+    // Если чат ещё не создан — создаём автоматически, чтобы можно было
+    // прикреплять файлы прямо с главного экрана.
     if (_currentChatId == null) {
-      _showError('Сначала создайте или выберите чат');
-      return;
+      await _createChat();
+      if (!mounted || _currentChatId == null) return;
     }
     final auth = context.read<AuthService>();
     showModalBottomSheet(
@@ -257,9 +256,14 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_showChatList && _currentChatId == null,
+      canPop: !_inputFocusNode.hasFocus && !_showChatList && _currentChatId == null,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
+        // Если открыта клавиатура — сначала закрываем её, не трогая чат.
+        if (_inputFocusNode.hasFocus) {
+          _inputFocusNode.unfocus();
+          return;
+        }
         if (_showChatList) {
           setState(() => _showChatList = false);
         } else if (_currentChatId != null) {
@@ -276,7 +280,10 @@ class _ChatScreenState extends State<ChatScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.menu),
-            onPressed: () => setState(() => _showChatList = !_showChatList),
+            onPressed: () {
+              FocusScope.of(context).unfocus();
+              setState(() => _showChatList = !_showChatList);
+            },
           ),
           title: Row(
             children: [
@@ -305,7 +312,11 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         body: Stack(
           children: [
-            _buildChatArea(),
+            GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              behavior: HitTestBehavior.translucent,
+              child: _buildChatArea(),
+            ),
             if (_showChatList) ...[
               GestureDetector(
                 onTap: () => setState(() => _showChatList = false),
@@ -528,7 +539,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildInputBar() {
     final hasContext = _contextFiles.isNotEmpty && _currentChatId != null;
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(6, 12, 6, 12),
       decoration: const BoxDecoration(
         color: Color(0xFF2C2C2E),
         border: Border(top: BorderSide(color: Color(0xFF3C3C3E), width: 1)),
@@ -551,10 +562,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   tooltip: 'Файлы в контексте',
                   onPressed: _showFilesPanel,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
                 ),
+                const SizedBox(width: 4),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    focusNode: _inputFocusNode,
                     decoration: InputDecoration(
                       hintText: 'Напишите сообщение...',
                       border: OutlineInputBorder(
@@ -563,9 +579,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       filled: true,
                       fillColor: const Color(0xFF3C3C3E),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
+                      contentPadding: const EdgeInsets.fromLTRB(
+                        12,
+                        12,
+                        20,
+                        12,
                       ),
                     ),
                     onSubmitted: (text) => _sendMessage(text),
@@ -633,6 +651,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 }
@@ -740,6 +759,52 @@ class _FilesSheetState extends State<_FilesSheet> {
     }
   }
 
+  Future<void> _confirmDelete(Map<String, dynamic> file) async {
+    final fileId = file['id'] as int;
+    final name = file['original_name'] as String? ?? 'Файл';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2E),
+        title: const Text('Удалить файл?'),
+        content: Text('«$name» будет удалён безвозвратно.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Удалить',
+                style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final wasInContext = _contextIds.contains(fileId);
+    try {
+      await widget.api.deleteFile(fileId);
+      if (!mounted) return;
+      setState(() {
+        _files.removeWhere((f) => f['id'] == fileId);
+        _contextIds.remove(fileId);
+      });
+      // Если файл был в контексте чата — убираем его и из родительского экрана.
+      if (wasInContext) widget.onContextToggled(file, false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Не удалось удалить: $e'),
+              backgroundColor: Colors.red.shade700),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -818,12 +883,19 @@ class _FilesSheetState extends State<_FilesSheet> {
                           final size = file['size'] as int? ?? 0;
                           final isIndexed =
                               file['is_indexed'] as bool? ?? false;
-                          final mime = file['mime_type'] as String? ?? '';
 
-                          return CheckboxListTile(
-                            value: inContext,
-                            secondary: Icon(_iconFromMime(mime),
-                                color: Colors.grey),
+                          return ListTile(
+                            horizontalTitleGap: 0,
+                            minLeadingWidth: 0,
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 4),
+                            leading: Checkbox(
+                              value: inContext,
+                              onChanged: isIndexed
+                                  ? (val) => _toggle(file, val ?? false)
+                                  : null,
+                              activeColor: const Color(0xFF0A84FF),
+                            ),
                             title: Text(
                               name,
                               maxLines: 1,
@@ -846,10 +918,12 @@ class _FilesSheetState extends State<_FilesSheet> {
                                 ],
                               ],
                             ),
-                            onChanged: isIndexed
-                                ? (val) => _toggle(file, val ?? false)
-                                : null,
-                            activeColor: const Color(0xFF0A84FF),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color:  Colors.grey),
+                              tooltip: 'Удалить файл',
+                              onPressed: () => _confirmDelete(file),
+                            ),
                           );
                         },
                       ),
