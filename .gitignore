@@ -78,3 +78,6 @@ coverage/
 !**/ios/**/default.perspectivev3
 
 .vs/
+
+unity/AR/Assets/Plugins/
+unity/AR/Assets/Plugins.meta
