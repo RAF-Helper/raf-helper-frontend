@@ -1,4 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:gpt_markdown/custom_widgets/markdown_config.dart';
+
+/// Базовый размер текста в markdown-ответах ассистента.
+const double _kMdFontSize = 15;
+
+/// Размер текста в пунктах списков.
+const double _kListFontSize = 13;
+
+/// Размер текста в ячейках таблиц.
+const double _kTableFontSize = 13;
+
+/// Стиль markdown-заголовка (#, ##, ###…) заданного размера.
+TextStyle _heading(double size) => TextStyle(
+      fontSize: size,
+      fontWeight: FontWeight.bold,
+      color: Colors.white,
+    );
+
+/// Тема markdown с аккуратной иерархией заголовков. Считается один раз, чтобы
+/// не пересоздавать её (вместе с ThemeData.dark внутри) на каждый build пузыря.
+final GptMarkdownThemeData _mdTheme = GptMarkdownThemeData(
+  brightness: Brightness.dark,
+  h1: _heading(18),
+  h2: _heading(17),
+  h3: _heading(16),
+  h4: _heading(15),
+  h5: _heading(15),
+  h6: _heading(15),
+);
+
+/// Маркированный список с уменьшенным размером текста пунктов: переиспользуем
+/// стандартный [UnOrderedList], лишь подменив размер шрифта в конфиге.
+class _SmallUnorderedList extends UnOrderedList {
+  @override
+  Widget build(
+    BuildContext context,
+    String text,
+    GptMarkdownConfig config,
+  ) {
+    final smallConfig = config.copyWith(
+      style: (config.style ?? const TextStyle())
+          .copyWith(fontSize: _kListFontSize),
+    );
+    return super.build(context, text, smallConfig);
+  }
+}
+
+/// Таблица с уменьшенным размером текста ячеек: переиспользуем всю логику
+/// стандартного [TableMd], лишь подменив размер шрифта в конфиге.
+class _SmallTable extends TableMd {
+  @override
+  Widget build(
+    BuildContext context,
+    String text,
+    GptMarkdownConfig config,
+  ) {
+    final smallConfig = config.copyWith(
+      style: (config.style ?? const TextStyle())
+          .copyWith(fontSize: _kTableFontSize),
+    );
+    return super.build(context, text, smallConfig);
+  }
+}
+
+/// Рендер формул: блочные (`$$...$$`) оборачиваем в горизонтальный скролл,
+/// чтобы длинную формулу можно было прокрутить, а не обрезать. Инлайн-формулы
+/// (`$...$`) остаются в строке текста.
+Widget _latexBuilder(
+  BuildContext context,
+  String tex,
+  TextStyle textStyle,
+  bool inline,
+) {
+  final math = Math.tex(
+    tex,
+    textStyle: textStyle,
+    mathStyle: inline ? MathStyle.text : MathStyle.display,
+    onErrorFallback: (err) => Text(tex, style: textStyle),
+  );
+  if (inline) return math;
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    child: math,
+  );
+}
+
+final List<MarkdownComponent> _components = MarkdownComponent.globalComponents
+    .map((c) => switch (c) {
+          UnOrderedList() => _SmallUnorderedList(),
+          TableMd() => _SmallTable(),
+          _ => c,
+        })
+    .toList();
 
 class ChatBubble extends StatelessWidget {
   final String message;
@@ -37,12 +132,28 @@ class ChatBubble extends StatelessWidget {
                   _buildDot(2),
                 ],
               )
-            : Text(
-                message,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Colors.white,
-                ),
+            : SelectionArea(
+                child: isUser
+                    ? Text(
+                        message,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      )
+                    : GptMarkdownTheme(
+                        gptThemeData: _mdTheme,
+                        child: GptMarkdown(
+                          message,
+                          components: _components,
+                          latexBuilder: _latexBuilder,
+                          useDollarSignsForLatex: true,
+                          style: const TextStyle(
+                            fontSize: _kMdFontSize,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
               ),
       ),
     );
