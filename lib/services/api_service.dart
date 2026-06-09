@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
+typedef TokenProvider = Future<String?> Function(bool forceRefresh);
+
 class ApiService {
   final Dio _dio;
 
@@ -16,8 +18,38 @@ class ApiService {
     _dio.options.headers['Content-Type'] = 'application/json';
   }
 
-  void setAuthToken(String token) {
-    _dio.options.headers['Authorization'] = 'Bearer $token';
+  /// Устанавливает провайдер токена. Перед каждым запросом interceptor
+  /// получает актуальный Firebase ID token. При 401 — force-refresh + retry.
+  void setTokenProvider(TokenProvider provider) {
+    _dio.interceptors.add(QueuedInterceptorsWrapper(
+      onRequest: (options, handler) async {
+        try {
+          final token = await provider(false);
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+        } catch (_) {}
+        handler.next(options);
+      },
+      onError: (error, handler) async {
+        if (error.response?.statusCode == 401) {
+          try {
+            final token = await provider(true);
+            if (token != null) {
+              error.requestOptions.headers['Authorization'] = 'Bearer $token';
+              final response = await _dio.fetch(error.requestOptions);
+              handler.resolve(response);
+              return;
+            }
+          } catch (_) {}
+        }
+        handler.next(error);
+      },
+    ));
+  }
+
+  void clearAuthToken() {
+    _dio.options.headers.remove('Authorization');
   }
 
   // ---- Auth ----
@@ -34,11 +66,25 @@ class ApiService {
 
   // ---- Chats CRUD ----
 
-  Future<Map<String, dynamic>> createChat({String title = 'Новый чат'}) async {
+  Future<Map<String, dynamic>> createChat({
+    String title = 'Новый чат',
+    bool isWebSearchEnabled = false,
+  }) async {
     final response = await _dio.post('/chats/', data: {
       'title': title,
-      'is_web_search_enabled': false,
+      'is_web_search_enabled': isWebSearchEnabled,
     });
+    return response.data;
+  }
+
+  Future<Map<String, dynamic>> updateChat(int chatId, {
+    String? title,
+    bool? isWebSearchEnabled,
+  }) async {
+    final data = <String, dynamic>{};
+    if (title != null) data['title'] = title;
+    if (isWebSearchEnabled != null) data['is_web_search_enabled'] = isWebSearchEnabled;
+    final response = await _dio.patch('/chats/$chatId', data: data);
     return response.data;
   }
 

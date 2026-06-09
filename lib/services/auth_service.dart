@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'api_service.dart';
 
@@ -7,18 +7,45 @@ class AuthService extends ChangeNotifier {
   final ApiService api;
 
   bool _isAuthenticated = false;
+  bool _isInitializing = true;
   bool _needsEmailVerification = false;
   String? _userEmail;
   int? _pgUserId;
 
   AuthService({ApiService? apiService})
-      : api = apiService ?? ApiService();
+      : api = apiService ?? ApiService() {
+    // Interceptor будет перед каждым запросом получать актуальный токен.
+    // Firebase SDK кеширует токен и обновляет только когда он протух.
+    api.setTokenProvider((forceRefresh) async {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) return null;
+      return await user.getIdToken(forceRefresh);
+    });
+    _tryRestoreSession();
+  }
 
   bool get isAuthenticated => _isAuthenticated;
+  bool get isInitializing => _isInitializing;
   bool get needsEmailVerification => _needsEmailVerification;
   String? get userEmail => _userEmail;
   int? get pgUserId => _pgUserId;
   User? get firebaseUser => _firebaseAuth.currentUser;
+
+  /// Проверяет, есть ли сохранённый Firebase user, и восстанавливает сессию.
+  Future<void> _tryRestoreSession() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null || !user.emailVerified) return;
+      // Force-refresh чтобы получить актуальный токен с email_verified claim
+      await user.getIdToken(true);
+      await _syncWithBackend(user);
+    } catch (e) {
+      debugPrint('Session restore failed: $e');
+    } finally {
+      _isInitializing = false;
+      notifyListeners();
+    }
+  }
 
   Future<void> login(String email, String password) async {
     if (!email.endsWith('@bsu.by')) {
@@ -41,6 +68,8 @@ class AuthService extends ChangeNotifier {
       throw Exception('Email не подтверждён. Проверьте почту.');
     }
 
+    // Force-refresh для получения актуального email_verified claim
+    await user.getIdToken(true);
     await _syncWithBackend(user);
   }
 
@@ -80,18 +109,16 @@ class AuthService extends ChangeNotifier {
     final refreshed = _firebaseAuth.currentUser;
     if (refreshed != null && refreshed.emailVerified) {
       _needsEmailVerification = false;
+      await refreshed.getIdToken(true);
       await _syncWithBackend(refreshed);
       return true;
     }
     return false;
   }
 
+  /// Синхронизирует Firebase user с PostgreSQL на бэкенде.
+  /// Токен теперь берётся автоматически через interceptor.
   Future<void> _syncWithBackend(User user) async {
-    final idToken = await user.getIdToken(true); // force-refresh so token has latest email_verified claim
-    if (idToken == null) throw Exception('Не удалось получить токен');
-
-    api.setAuthToken(idToken);
-
     final userData = await api.syncUser();
     _pgUserId = userData['id'];
     _userEmail = user.email;
@@ -106,6 +133,7 @@ class AuthService extends ChangeNotifier {
 
   Future<void> logout() async {
     await _firebaseAuth.signOut();
+    api.clearAuthToken();
     _isAuthenticated = false;
     _needsEmailVerification = false;
     _userEmail = null;
