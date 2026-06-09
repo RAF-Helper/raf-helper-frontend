@@ -48,6 +48,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isLoading = false;
   bool _isSending = false;
   bool _showChatList = false;
+  bool _isWebSearchEnabled = false;
 
   @override
   void initState() {
@@ -73,7 +74,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _createChat({String title = 'Новый чат'}) async {
     final auth = context.read<AuthService>();
     try {
-      final chat = await auth.api.createChat(title: title);
+      final chat = await auth.api.createChat(
+        title: title,
+        isWebSearchEnabled: _isWebSearchEnabled,
+      );
       final chatId = chat['id'] as int;
       await _loadChats();
       _selectChat(chatId);
@@ -100,11 +104,16 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _selectChat(int chatId) {
+    final chat = _chats.firstWhere(
+      (c) => c['id'] == chatId,
+      orElse: () => <String, dynamic>{},
+    );
     setState(() {
       _currentChatId = chatId;
       _messages = [];
       _contextFiles = [];
       _showChatList = false;
+      _isWebSearchEnabled = chat['is_web_search_enabled'] as bool? ?? false;
     });
     _loadMessages(chatId);
     _loadContextFiles(chatId);
@@ -219,6 +228,24 @@ class _ChatScreenState extends State<ChatScreen> {
       case 'presentation':
         _sendMessage('Сделай презентацию по теме', agent: 'presentation');
         break;
+    }
+  }
+
+  Future<void> _toggleWebSearch() async {
+    final newValue = !_isWebSearchEnabled;
+    setState(() => _isWebSearchEnabled = newValue);
+
+    if (_currentChatId != null) {
+      final auth = context.read<AuthService>();
+      try {
+        await auth.api.updateChat(
+          _currentChatId!,
+          isWebSearchEnabled: newValue,
+        );
+      } catch (e) {
+        setState(() => _isWebSearchEnabled = !newValue);
+        _showError('Не удалось обновить настройки чата: $e');
+      }
     }
   }
 
@@ -562,6 +589,22 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   tooltip: 'Файлы в контексте',
                   onPressed: _showFilesPanel,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  visualDensity: VisualDensity.compact,
+                ),
+                const SizedBox(width: 2),
+                IconButton(
+                  icon: Icon(
+                    Icons.language,
+                    color: _isWebSearchEnabled
+                        ? const Color(0xFF0A84FF)
+                        : Colors.grey,
+                  ),
+                  tooltip: _isWebSearchEnabled
+                      ? 'Веб-поиск включён'
+                      : 'Включить веб-поиск',
+                  onPressed: _toggleWebSearch,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   visualDensity: VisualDensity.compact,
