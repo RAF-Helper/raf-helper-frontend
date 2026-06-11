@@ -158,7 +158,7 @@ class ApiService {
     await _dio.delete('/files/$fileId');
   }
 
-  // ---- Context files ----
+  // ---- Chat context ----
 
   Future<List<dynamic>> getContextFiles(int chatId) async {
     final response = await _dio.get('/chats/$chatId/context');
@@ -171,5 +171,19 @@ class ApiService {
 
   Future<void> removeContextFile(int chatId, int fileId) async {
     await _dio.delete('/chats/$chatId/context/$fileId');
+  }
+
+  // ---- Exports ----
+
+  /// Returns the full URL for an export file.
+  /// The [filename] is the basename from export_path (e.g. "abstract_42.tex").
+  String getExportFileUrl(String filename) {
+    return '${_dio.options.baseUrl}/files/exports/$filename';
+  }
+
+  /// Downloads an export file to a local path.
+  /// Uses the authenticated dio client so auth headers are included.
+  Future<void> downloadFile(String url, String savePath) async {
+    await _dio.download(url, savePath);
   }
 }

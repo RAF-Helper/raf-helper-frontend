@@ -175,6 +175,8 @@ class _ChatScreenState extends State<ChatScreen> {
           'role': 'assistant',
           'content': response['content'] ?? 'Нет ответа',
           'agent_used': response['agent_used'],
+          if (response['export_path'] != null)
+            'export_path': response['export_path'] as String,
         });
       });
       _scrollToBottom();
@@ -454,6 +456,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 return ChatBubble(
                   message: message['content'] ?? '',
                   isUser: message['role'] == 'user',
+                  exportPath: message['export_path'] as String?,
                 );
               },
             ),
