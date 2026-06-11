@@ -2,6 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -167,40 +171,72 @@ class _ExportFileTile extends StatelessWidget {
     );
   }
 
-  /// Downloads the file via the authenticated API and opens it with the system handler.
+  /// Downloads the file via the authenticated API and saves it to the system's Downloads folder.
   Future<void> _downloadAndOpen(
     BuildContext context,
     ApiService api,
     String url,
   ) async {
     try {
-      // Загружаем файл через dio (с авторизацией) во временную директорию
-      final dir = Directory.systemTemp.createTempSync('raf_export_');
-      final filePath = '${dir.path}/$_filename';
+      // 1. Fetch bytes first
+      final bytes = await api.getExportFileBytes(url);
 
-      await api.downloadFile(url, filePath);
+      String? savePath;
 
-      // Пытаемся открыть файл через системный обработчик
       if (Platform.isAndroid || Platform.isIOS) {
-        // На мобильных устройствах показываем SnackBar с уведомлением,
-        // так как открытие произвольных файлов требует дополнительных пакетов
+        // On Android and iOS, FilePicker.saveFile REQUIRES bytes
+        // to actually perform the save operation on modern OS versions.
+        savePath = await FilePicker.platform.saveFile(
+          dialogTitle: 'Save file to Downloads',
+          fileName: _filename,
+          bytes: bytes,
+        );
+      } else if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        // On Desktop, we can use the Downloads directory directly or saveFile
+        final downloadsDir = await getDownloadsDirectory();
+        if (downloadsDir != null) {
+          savePath = '${downloadsDir.path}/$_filename';
+          final file = File(savePath);
+          await file.writeAsBytes(bytes);
+        } else {
+          savePath = await FilePicker.platform.saveFile(
+            dialogTitle: 'Save file',
+            fileName: _filename,
+          );
+          if (savePath != null) {
+            await File(savePath).writeAsBytes(bytes);
+          }
+        }
+      }
+
+      if (savePath == null) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Файл сохранён: $_filename'),
-              behavior: SnackBarBehavior.floating,
-            ),
+            const SnackBar(content: Text('Отмена сохранения или ошибка доступа')),
           );
         }
-      } else if (Platform.isLinux || Platform.isMacOS) {
-        await Process.run('xdg-open', [filePath]);
+        return;
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Файл сохранён: $_filename'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      // Open the file using system handler on Desktop
+      if (Platform.isLinux || Platform.isMacOS) {
+        await Process.run('xdg-open', [savePath!]);
       } else if (Platform.isWindows) {
-        await Process.run('cmd', ['/c', 'start', '', filePath]);
+        await Process.run('cmd', ['/c', 'start', '', savePath!]);
       }
     } catch (e) {
-      // Fallback: открываем URL в браузере (может не сработать без токена)
-      debugPrint('Failed to open export file: $e');
+      debugPrint('Failed to download export file: $e');
       try {
+        // Fallback: open URL in browser
         if (Platform.isLinux || Platform.isMacOS) {
           await Process.run('xdg-open', [url]);
         } else if (Platform.isWindows) {

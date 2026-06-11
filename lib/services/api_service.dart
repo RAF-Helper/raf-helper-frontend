@@ -186,4 +186,14 @@ class ApiService {
   Future<void> downloadFile(String url, String savePath) async {
     await _dio.download(url, savePath);
   }
+
+  /// Fetches an export file as bytes.
+  /// Useful for mobile platforms that require bytes for saving files.
+  Future<Uint8List> getExportFileBytes(String url) async {
+    final response = await _dio.get(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data);
+  }
 }
